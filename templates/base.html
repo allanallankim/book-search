@@ -165,9 +165,19 @@
         {% with messages = get_flashed_messages() %}
           {% if messages %}
             {% for message in messages %}
-              <div class="alert alert-info alert-dismissible fade show border-0 shadow-sm" role="alert">
-                  <i class="bi bi-info-circle-fill me-2"></i>{{ message }}
-                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              {% set alert_class = 'alert-info' %}
+              {% set icon_class = 'bi-info-circle-fill' %}
+              {% if '완료' in message or '환영' in message or '성공' in message %}
+                {% set alert_class = 'alert-success' %}
+                {% set icon_class = 'bi-check-circle-fill' %}
+              {% elif '실패' in message or '올바르지' in message or '이미' in message or '필요' in message %}
+                {% set alert_class = 'alert-danger' %}
+                {% set icon_class = 'bi-exclamation-triangle-fill' %}
+              {% endif %}
+              <div class="alert {{ alert_class }} alert-dismissible fade show border-0 shadow-sm d-flex align-items-center" role="alert">
+                  <i class="bi {{ icon_class }} me-2 fs-5"></i>
+                  <div>{{ message }}</div>
+                  <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
               </div>
             {% endfor %}
           {% endif %}

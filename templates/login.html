@@ -9,7 +9,7 @@
                     <i class="bi bi-box-arrow-in-right"></i>
                 </div>
                 <h4 class="fw-bold mb-1">로그인</h4>
-                <p class="text-muted small">맞춤형 검색 조건을 저장하고 관리하세요</p>
+                <p class="text-muted small">로그인 후 검색 화면으로 이동하며 맞춤 검색 조건을 저장할 수 있습니다</p>
             </div>
             <div class="card-body p-4 pt-2">
                 <form method="POST">
@@ -17,14 +17,27 @@
                         <label class="form-label small fw-bold text-muted">아이디</label>
                         <input type="text" class="form-control" name="username" placeholder="아이디 입력" required autofocus>
                     </div>
-                    <div class="mb-4">
+                    <div class="mb-3">
                         <label class="form-label small fw-bold text-muted">비밀번호</label>
                         <input type="password" class="form-control" name="password" placeholder="비밀번호 입력" required>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">로그인</button>
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" name="remember" id="rememberMe" checked>
+                        <label class="form-check-label small text-muted" for="rememberMe">
+                            로그인 상태 유지 (브라우저를 닫아도 정보 유지)
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">
+                        <i class="bi bi-box-arrow-in-right me-1"></i>로그인
+                    </button>
                 </form>
                 <div class="text-center mt-3 small text-muted">
                     계정이 없으신가요? <a href="{{ url_for('register') }}" class="text-primary fw-semibold">회원가입</a>
+                </div>
+                <div class="text-center mt-2">
+                    <a href="{{ url_for('index') }}" class="small text-secondary text-decoration-none">
+                        <i class="bi bi-arrow-left me-1"></i>도서 검색 화면으로 돌아가기
+                    </a>
                 </div>
             </div>
         </div>

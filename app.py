@@ -1,20 +1,36 @@
 import os
 import json
 import requests
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from datetime import timedelta
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 import xml.etree.ElementTree as ET
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key_here'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///book_search.db'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your_secret_key_here_nl_book_search')
+
+# Ensure absolute path for SQLite database so data is reliably saved and persisted
+basedir = os.path.abspath(os.path.dirname(__file__))
+instance_dir = os.path.join(basedir, 'instance')
+os.makedirs(instance_dir, exist_ok=True)
+db_path = os.path.join(instance_dir, 'book_search.db')
+
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Persistent Session & Remember Cookie Configuration (prevents losing login state on browser close)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
+app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+app.config['REMEMBER_COOKIE_REFRESH_EACH_REQUEST'] = True
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+login_manager.login_message = '로그인이 필요한 서비스입니다.'
+login_manager.login_message_category = 'warning'
 
 API_KEY = "3fa266309ffe82abc8018e9ed2f3b6c0bd64d01cd326204acfae5062445ed3d2"
 API_URL = "https://www.nl.go.kr/NL/search/openApi/search.do"
@@ -210,36 +226,60 @@ def api_search():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+        remember = True if request.form.get('remember') == 'on' or 'remember' not in request.form else True
+
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password_hash, password):
-            login_user(user)
+            login_user(user, remember=remember)
+            session.permanent = True
+            flash(f'환영합니다, {user.username}님! 도서 검색 화면으로 이동했습니다.')
+            next_page = request.args.get('next')
+            if next_page and not next_page.startswith('//') and not next_page.startswith('http'):
+                return redirect(next_page)
             return redirect(url_for('index'))
         else:
-            flash('Login failed. Check username and password.')
+            flash('아이디 또는 비밀번호가 올바르지 않습니다. 다시 확인해 주세요.')
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+
+        if not username or not password:
+            flash('아이디와 비밀번호를 모두 입력해 주세요.')
+            return render_template('register.html')
+
         user = User.query.filter_by(username=username).first()
         if user:
-            flash('Username already exists.')
+            flash('이미 등록되어 있는 아이디입니다. 다른 아이디를 입력해 주세요.')
         else:
             new_user = User(username=username, password_hash=generate_password_hash(password, method='pbkdf2:sha256'))
             db.session.add(new_user)
             db.session.commit()
-            return redirect(url_for('login'))
+            
+            # Immediately log in the user, keep persistent session, and redirect to search screen!
+            login_user(new_user, remember=True)
+            session.permanent = True
+            flash(f'회원가입이 완료되었습니다! {new_user.username}님으로 로그인되어 검색 화면으로 이동했습니다.')
+            return redirect(url_for('index'))
     return render_template('register.html')
 
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
+    flash('정상적으로 로그아웃되었습니다.')
     return redirect(url_for('index'))
 
 @app.route('/custom_search')
