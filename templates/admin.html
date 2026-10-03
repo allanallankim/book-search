@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h3 class="fw-bold mb-1"><i class="bi bi-shield-lock text-primary me-2"></i>손님 계정 관리</h3>
+        <p class="text-muted small mb-0">등록된 일반 사용자 계정 및 해당 계정의 맞춤 검색을 관리합니다.</p>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm" style="border-radius: var(--radius-lg); overflow: hidden;">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 20%;">고유 ID</th>
+                    <th style="width: 55%;">사용자 아이디 (Username)</th>
+                    <th style="width: 25%; text-align: right;">관리 작업</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td class="font-monospace text-muted">{{ u.id }}</td>
+                    <td>
+                        <span class="fw-semibold text-dark"><i class="bi bi-person me-1"></i>{{ u.username }}</span>
+                    </td>
+                    <td style="text-align: right;">
+                        <form method="POST" action="{{ url_for('delete_user', user_id=u.id) }}" onsubmit="return confirm('사용자 \'{{ u.username }}\' 계정과 저장된 검색조건을 모두 삭제하시겠습니까?');" style="display: inline;">
+                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                <i class="bi bi-trash3 me-1"></i>삭제
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="text-center py-5 text-muted">
+                        <i class="bi bi-people fs-1 d-block mb-2 text-secondary"></i>
+                        등록된 손님 계정이 없습니다.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

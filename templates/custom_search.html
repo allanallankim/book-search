@@ -1,0 +1,453 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .saved-card {
+        background: #ffffff;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border-color);
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    .book-card {
+        background: #ffffff;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .book-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-hover);
+        border-color: #cbd5e1;
+    }
+
+    .card-cover-container {
+        position: relative;
+        background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+        height: 220px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 14px;
+    }
+
+    .book-cover-img {
+        max-height: 100%;
+        max-width: 100%;
+        object-fit: contain;
+        border-radius: 4px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .book-mockup {
+        width: 120px;
+        height: 170px;
+        border-radius: 4px 8px 8px 4px;
+        position: relative;
+        box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.25);
+        padding: 12px 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        color: white;
+        border-left: 4px solid rgba(0, 0, 0, 0.3);
+    }
+
+    .mockup-title {
+        font-weight: 700;
+        font-size: 0.8rem;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .mockup-author {
+        font-size: 0.7rem;
+        opacity: 0.9;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .format-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 4px 8px;
+        border-radius: 10px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        background: rgba(255, 255, 255, 0.92);
+        color: #334155;
+    }
+
+    .card-body-content {
+        padding: 16px 18px;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+
+    .book-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--text-main);
+        line-height: 1.4;
+        margin-bottom: 8px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        cursor: pointer;
+    }
+
+    .meta-row {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 4px;
+    }
+
+    .card-action-bar {
+        margin-top: auto;
+        padding-top: 12px;
+        border-top: 1px solid #f1f5f9;
+        display: flex;
+        gap: 6px;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h3 class="fw-bold mb-1"><i class="bi bi-bookmark-star text-primary me-2"></i>맞춤형 검색 조건 보관함</h3>
+        <p class="text-muted small mb-0">저장해 둔 맞춤형 검색 조건을 클릭하여 즉시 도서를 검색할 수 있습니다.</p>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn btn-outline-primary rounded-pill btn-sm px-3">
+        <i class="bi bi-plus-lg me-1"></i>새 검색 실행하기
+    </a>
+</div>
+
+<div class="saved-card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 25%;">검색 조건 이름</th>
+                    <th style="width: 50%;">조건 상세</th>
+                    <th style="width: 25%; text-align: right;">관리 / 실행</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for search in saved_searches %}
+                <tr>
+                    <td>
+                        <strong class="text-primary fs-6"><i class="bi bi-tag-fill me-1 text-primary-emphasis"></i>{{ search.name }}</strong>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border font-monospace" style="font-size: 0.85rem;" id="badge-params-{{ search.id }}">
+                            {{ search.query_params }}
+                        </span>
+                    </td>
+                    <td style="text-align: right;">
+                        <button class="btn btn-sm btn-primary rounded-pill px-3 me-1 run-search-btn" data-params='{{ search.query_params }}' data-name="{{ search.name }}">
+                            <i class="bi bi-play-fill me-1"></i>실행
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger rounded-pill px-3 delete-search-btn" data-id="{{ search.id }}">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="text-center py-5 text-muted">
+                        <i class="bi bi-bookmark-x fs-1 d-block mb-2 text-secondary"></i>
+                        저장된 맞춤형 검색 조건이 없습니다.<br>
+                        <a href="{{ url_for('index') }}" class="btn btn-sm btn-primary mt-3 rounded-pill px-3">도서 검색하러 가기</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Results Area -->
+<div id="customResultsArea" class="mt-4" style="display: none;">
+    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+        <h4 class="fw-bold mb-0">
+            <i class="bi bi-card-checklist text-primary me-2"></i>"<span id="currentSearchNameText">검색</span>" 결과 
+            (<span id="customTotalCount" class="text-primary fw-bold">0</span>건)
+        </h4>
+        <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill" id="customQueryBadge"></span>
+    </div>
+
+    <!-- Loading Skeleton -->
+    <div id="customLoadingSkeleton" style="display: none;" class="my-4">
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">도서 데이터를 검색하는 중입니다...</p>
+        </div>
+    </div>
+
+    <!-- Books Grid -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4" id="customResultsList">
+    </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: var(--radius-lg); overflow: hidden;">
+      <div class="modal-header bg-light border-0 py-3">
+        <h5 class="modal-title fw-bold" id="detailModalLabel">
+            <i class="bi bi-book-half text-primary me-2"></i>도서 상세 정보
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="row g-4">
+            <div class="col-md-4 text-center">
+                <div id="modalCoverContainer" class="p-3 bg-light rounded d-flex align-items-center justify-content-center mb-3" style="min-height: 240px;"></div>
+                <div class="p-2 bg-light rounded text-start small mb-2">
+                    <span class="text-muted d-block">형태/자료유형</span>
+                    <strong id="modalType" class="text-dark">-</strong>
+                </div>
+                <div class="p-2 bg-light rounded text-start small" id="modalPriceBox">
+                    <span class="text-muted d-block">가격</span>
+                    <strong id="modalPrice" class="text-success fs-6">-</strong>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <h4 class="fw-bold text-dark mb-3" id="modalTitle"></h4>
+                <table class="table table-sm table-borderless">
+                    <tbody>
+                        <tr><th class="text-muted" style="width: 25%;"><i class="bi bi-person me-1"></i>저자</th><td id="modalAuthor" class="fw-semibold"></td></tr>
+                        <tr><th class="text-muted"><i class="bi bi-building me-1"></i>발행처</th><td id="modalPublisher"></td></tr>
+                        <tr><th class="text-muted"><i class="bi bi-calendar3 me-1"></i>발행일</th><td id="modalYear"></td></tr>
+                        <tr><th class="text-muted"><i class="bi bi-file-earmark-text me-1"></i>페이지</th><td id="modalPage"></td></tr>
+                        <tr><th class="text-muted"><i class="bi bi-upc-scan me-1"></i>ISBN</th><td id="modalISBN" class="font-monospace fw-bold"></td></tr>
+                    </tbody>
+                </table>
+                <div id="modalSummarySection" class="mt-3" style="display: none;">
+                    <h6 class="fw-bold text-secondary mb-2">책 소개 / 요약</h6>
+                    <div id="modalSummary" class="p-3 bg-light rounded text-muted small" style="max-height: 160px; overflow-y: auto;"></div>
+                </div>
+                <div class="mt-4 pt-3 border-top">
+                    <a href="#" id="modalDetailLink" target="_blank" class="btn btn-primary rounded-pill px-4">
+                        <i class="bi bi-box-arrow-up-right me-1"></i> 국립중앙도서관 상세페이지
+                    </a>
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentResults = [];
+    const MOCKUP_COLORS = [
+        ['#312e81', '#4338ca'],
+        ['#1e3a8a', '#2563eb'],
+        ['#064e3b', '#059669'],
+        ['#701a75', '#a21caf'],
+        ['#831843', '#be185d'],
+        ['#7c2d12', '#c2410c']
+    ];
+
+    $(document).ready(function() {
+        // Pretty render params badges in table
+        $('span[id^="badge-params-"]').each(function() {
+            try {
+                const parsed = JSON.parse($(this).text().trim());
+                const badges = [];
+                if (parsed.kwd) badges.push(`키워드: ${parsed.kwd}`);
+                if (parsed.title) badges.push(`제목: ${parsed.title}`);
+                if (parsed.author) badges.push(`저자: ${parsed.author}`);
+                if (parsed.publisher) badges.push(`출판사: ${parsed.publisher}`);
+                if (parsed.category && parsed.category !== '전체') badges.push(`분류: ${parsed.category}`);
+                $(this).text(badges.join(' | ') || '전체 검색');
+            } catch(e) {}
+        });
+
+        $('.delete-search-btn').on('click', function() {
+            if (confirm('이 맞춤형 검색조건을 삭제하시겠습니까?')) {
+                const id = $(this).data('id');
+                $.ajax({
+                    url: '/api/delete_search/' + id,
+                    type: 'DELETE',
+                    success: function() {
+                        location.reload();
+                    }
+                });
+            }
+        });
+
+        // Run search button
+        $('.run-search-btn').on('click', function() {
+            const params = $(this).data('params');
+            const searchName = $(this).data('name');
+            let formData = {};
+            try {
+                formData = typeof params === 'string' ? JSON.parse(params) : params;
+            } catch (e) {
+                formData = {};
+            }
+            
+            formData.pageNum = 1;
+            formData.pageSize = 12;
+
+            $('#currentSearchNameText').text(searchName);
+            $('#customResultsArea').show();
+            $('#customLoadingSkeleton').show();
+            $('#customResultsList').empty();
+
+            $('html, body').animate({
+                scrollTop: $('#customResultsArea').offset().top - 80
+            }, 300);
+
+            $.ajax({
+                url: '/api/search',
+                type: 'GET',
+                data: formData,
+                success: function(data) {
+                    $('#customLoadingSkeleton').hide();
+                    currentResults = [];
+
+                    if (data.error) {
+                        alert('API 안내: ' + data.error);
+                        return;
+                    }
+
+                    const total = data.total || (data.result ? data.result.length : 0);
+                    $('#customTotalCount').text(total.toLocaleString('ko-KR'));
+
+                    if (data.result && data.result.length > 0) {
+                        currentResults = data.result;
+                        data.result.forEach((item, index) => {
+                            const title = item.title_info || '제목 없음';
+                            const author = item.author_info || '저자 미상';
+                            const pub = item.pub_info || '발행처 미상';
+                            const year = item.pub_year_info ? `${item.pub_year_info}년` : '';
+                            const typeName = item.type_name || '도서';
+                            const isbn = item.isbn || '-';
+                            const coverUrl = item.cover_url;
+
+                            let coverMarkup = '';
+                            if (coverUrl) {
+                                coverMarkup = `<img src="${escapeHtml(coverUrl)}" alt="${escapeHtml(title)}" class="book-cover-img" onerror="this.parentElement.innerHTML = getMockupHtml('${escapeHtml(title.replace(/'/g, "\\'"))}', '${escapeHtml(author.replace(/'/g, "\\'"))}', ${index});">`;
+                            } else {
+                                coverMarkup = getMockupHtml(title, author, index);
+                            }
+
+                            $('#customResultsList').append(`
+                                <div class="col" data-index="${index}">
+                                    <div class="book-card">
+                                        <div class="card-cover-container">
+                                            <span class="format-badge">${escapeHtml(typeName)}</span>
+                                            ${coverMarkup}
+                                        </div>
+                                        <div class="card-body-content">
+                                            <h5 class="book-title" title="${escapeHtml(title)}">${escapeHtml(title)}</h5>
+                                            <div class="meta-row"><i class="bi bi-person"></i><span class="text-truncate">${escapeHtml(author)}</span></div>
+                                            <div class="meta-row"><i class="bi bi-building"></i><span class="text-truncate">${escapeHtml(pub)} ${year ? '· ' + year : ''}</span></div>
+                                            <div class="meta-row font-monospace small"><i class="bi bi-upc-scan"></i><span>${escapeHtml(isbn)}</span></div>
+                                            <div class="card-action-bar">
+                                                <button type="button" class="btn btn-sm btn-primary rounded-pill w-100 open-detail-btn">
+                                                    상세보기
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `);
+                        });
+                    } else {
+                        $('#customResultsList').append('<div class="col-12 text-center py-4 text-muted">검색 결과가 없습니다.</div>');
+                    }
+                },
+                error: function() {
+                    $('#customLoadingSkeleton').hide();
+                    alert('검색 요청에 실패했습니다.');
+                }
+            });
+        });
+
+        // Detail Modal
+        $(document).on('click', '.open-detail-btn, .book-title', function() {
+            const index = $(this).closest('[data-index]').data('index');
+            const item = currentResults[index];
+            if (!item) return;
+
+            $('#modalTitle').text(item.title_info || '제목 없음');
+            $('#modalAuthor').text(item.author_info || '-');
+            $('#modalPublisher').text(item.pub_info || '-');
+            $('#modalYear').text(item.pub_year_info ? `${item.pub_year_info}년` : '-');
+            $('#modalType').text(item.type_name || '도서');
+            $('#modalISBN').text(item.isbn || '-');
+            $('#modalPage').text(item.page || '-');
+
+            if (item.price) {
+                $('#modalPrice').text(item.price);
+                $('#modalPriceBox').show();
+            } else {
+                $('#modalPriceBox').hide();
+            }
+
+            if (item.summary) {
+                $('#modalSummary').text(item.summary);
+                $('#modalSummarySection').show();
+            } else {
+                $('#modalSummarySection').hide();
+            }
+
+            const coverContainer = $('#modalCoverContainer');
+            if (item.cover_url) {
+                coverContainer.html(`<img src="${escapeHtml(item.cover_url)}" class="modal-cover-preview" style="max-height: 220px;" onerror="this.parentElement.innerHTML = getMockupHtml('${escapeHtml(item.title_info.replace(/'/g, "\\'"))}', '${escapeHtml(item.author_info.replace(/'/g, "\\'"))}', ${index});">`);
+            } else {
+                coverContainer.html(getMockupHtml(item.title_info, item.author_info, index));
+            }
+
+            if (item.detail_link) {
+                $('#modalDetailLink').attr('href', item.detail_link).show();
+            } else {
+                $('#modalDetailLink').hide();
+            }
+
+            const detailModal = new bootstrap.Modal(document.getElementById('detailModal'));
+            detailModal.show();
+        });
+    });
+
+    function getMockupHtml(title, author, index) {
+        const color = MOCKUP_COLORS[index % MOCKUP_COLORS.length];
+        return `
+            <div class="book-mockup" style="background: linear-gradient(135deg, ${color[0]} 0%, ${color[1]} 100%);">
+                <div class="mockup-title">${escapeHtml(title)}</div>
+                <div class="mockup-author">${escapeHtml(author || '저자 미상')}</div>
+            </div>
+        `;
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+</script>
+{% endblock %}
